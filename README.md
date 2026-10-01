@@ -2,6 +2,8 @@
 
 Universal tmux config with hardware-aware status bar. Drop it on any machine — VPS, desktop, laptop, Jetson/Spark, Raspberry Pi — and it just works.
 
+> Using [cmux](https://github.com/manaflow-ai/cmux/tree/main/cmux-tui) instead of tmux? See the counterpart: [universal-cmux](https://github.com/Quaerendir/universal-cmux).
+
 ## Features
 
 - **Auto-detecting GPU stats** in status bar (Nvidia desktop/Jetson/Spark, AMD ROCm, Intel iGPU, Raspberry Pi VideoCore)
