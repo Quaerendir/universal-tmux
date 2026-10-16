@@ -42,6 +42,23 @@ Then inside tmux:
 1. `prefix + I` (C-a, Shift+i) — install plugins via TPM
 2. `prefix + r` — reload config
 
+## Windows (psmux)
+
+Native Windows port using [psmux](https://github.com/psmux/psmux) (tmux-compatible, no WSL). Same prefix and keybindings; see [`windows/`](windows/).
+
+```powershell
+git clone https://github.com/Quaerendir/universal-tmux.git
+cd universal-tmux\windows
+pwsh -File .\setup-psmux.ps1     # installs psmux via winget if missing, then deploys config
+```
+
+Differences from the Linux/macOS version:
+
+- **No TPM / resurrect / continuum** — plugins and session save/restore are not set up.
+- **Status bar** — a small background `status-daemon.ps1` samples CPU, RAM and NVIDIA GPU (`nvidia-smi`) every 5 s and pushes the text into each session's `status-right`. It is a singleton and exits by itself ~15 s after psmux is gone. AMD/Intel GPUs have no Windows CLI, so the GPU segment is simply omitted.
+- **No load average** — Windows has no `/proc/loadavg` equivalent.
+- Config lives in `~/.psmux.conf` (psmux also reads `~/.tmux.conf`); `status-bg`/`status-fg` are replaced by `status-style`.
+
 ## Files
 
 | File | Description |
@@ -49,6 +66,9 @@ Then inside tmux:
 | `tmux-universal.conf` | Main tmux config (copied to `~/.tmux.conf`) |
 | `gpu-stats.sh` | Universal GPU metrics script (copied to `~/.tmux/gpu-stats.sh`) |
 | `setup-tmux.sh` | One-command installer with backup & TPM setup |
+| `windows/psmux-universal.conf` | psmux config for Windows (copied to `~/.psmux.conf`) |
+| `windows/status-daemon.ps1` | CPU/RAM/NVIDIA-GPU status-bar sampler (copied to `~/.psmux/`) |
+| `windows/setup-psmux.ps1` | One-command Windows installer with backup |
 
 ## Keybindings
 
