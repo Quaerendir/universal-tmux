@@ -73,6 +73,28 @@ if [ "$amd_n" -gt 0 ]; then
     exit 0
 fi
 
+# --- WSL: GPUs belong to Windows (/dev/dxg has no amdgpu sysfs), ask the host ---
+# Reads HWiNFO64 Shared Memory through powershell.exe, same reader as the psmux
+# status daemon (hwinfo-gpus.ps1, installed to ~/.tmux/ by setup-tmux.sh). Output
+# looks like the Windows bar: "GPU0 3% 3.8G 37°C 17W GPU1 0% 0G 33°C 3W".
+# Needs HWiNFO running with "Shared Memory Support" ON; otherwise stays silent.
+ps1="${GPU_STATS_HWINFO:-$HOME/.tmux/hwinfo-gpus.ps1}"
+if grep -qi microsoft /proc/version 2>/dev/null && [ -r "$ps1" ] && command -v powershell.exe &>/dev/null; then
+    cache="${XDG_RUNTIME_DIR:-/tmp}/gpu-stats-wsl-$(id -u).txt"
+    now=$(date +%s)
+    if [ -f "$cache" ] && [ $((now - $(stat -c %Y "$cache" 2>/dev/null || echo 0))) -lt 10 ]; then
+        cat "$cache"
+    else
+        script=$({ tr -d '\r' < "$ps1"
+                   printf '\n%s\n%s\n' '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)' '(@(Get-HwinfoGpus) -join " ")'; })
+        enc=$(printf '%s' "$script" | iconv -f UTF-8 -t UTF-16LE | base64 -w0)
+        out=$(powershell.exe -NoProfile -NonInteractive -EncodedCommand "$enc" 2>/dev/null | tr -d '\r' | head -1)
+        printf '%s' "$out" > "$cache.$$" && mv -f "$cache.$$" "$cache"   # empty result is cached too
+        printf '%s' "$out"
+    fi
+    exit 0
+fi
+
 # --- AMD (ROCm) fallback for kernels/GPUs without the sysfs counters ---
 if command -v rocm-smi &>/dev/null; then
     gpu_util=$(rocm-smi --showuse 2>/dev/null | awk '/GPU use/ {gsub(/%/,""); print $NF}' | head -1)

@@ -27,6 +27,7 @@ GPU section adapts per platform:
 | Nvidia Jetson/Spark (unified memory) | `GPU:12% 42°C MEM:87.4/119.7G` |
 | AMD Radeon (amdgpu, via sysfs — no `rocm-smi` needed) | `GPU:28% vRAM:4096/32752Mi 65°C` |
 | Several AMD GPUs | `GPU0:5% vRAM:1024/32752Mi 41°C GPU1:99% vRAM:32424/32752Mi 78°C` |
+| WSL with Radeon/NVIDIA on the Windows host (via HWiNFO) | `GPU0 4% 3.8G 37°C 19W GPU1 0% 0G 33°C 3W` |
 | Intel iGPU | `iGPU:1200MHz` |
 | Raspberry Pi | `RPi:52.1°C 500MHz 128M` (+ `THR!` on throttling) |
 | No GPU / VPS | *(empty — no clutter)* |
@@ -56,7 +57,7 @@ pwsh -File .\setup-psmux.ps1     # installs psmux via winget if missing, then de
 Differences from the Linux/macOS version:
 
 - **No TPM / resurrect / continuum** — plugins and session save/restore are not set up.
-- **Status bar** — a small background `status-daemon.ps1` samples CPU, RAM and NVIDIA GPU (`nvidia-smi`) every 5 s and pushes the text into each session's `status-right`. It is a singleton and exits by itself ~15 s after psmux is gone. AMD/Intel GPUs have no Windows CLI, so the GPU segment is simply omitted.
+- **Status bar** — a small background `status-daemon.ps1` samples CPU, RAM and GPU every 5 s and pushes the text into each session's `status-right`. It is a singleton and exits by itself ~15 s after psmux is gone. GPU data comes from the HWiNFO64 Shared Memory (every discrete AMD/NVIDIA card; enable *Shared Memory Support* in HWiNFO), falling back to `nvidia-smi`; with neither the GPU segment is omitted.
 - **No load average** — Windows has no `/proc/loadavg` equivalent.
 - Config lives in `~/.psmux.conf` (psmux also reads `~/.tmux.conf`); `status-bg`/`status-fg` are replaced by `status-style`.
 
@@ -68,7 +69,8 @@ Differences from the Linux/macOS version:
 | `gpu-stats.sh` | Universal GPU metrics script (copied to `~/.tmux/gpu-stats.sh`) |
 | `setup-tmux.sh` | One-command installer with backup & TPM setup |
 | `windows/psmux-universal.conf` | psmux config for Windows (copied to `~/.psmux.conf`) |
-| `windows/status-daemon.ps1` | CPU/RAM/NVIDIA-GPU status-bar sampler (copied to `~/.psmux/`) |
+| `windows/status-daemon.ps1` | CPU/RAM/GPU status-bar sampler (copied to `~/.psmux/`) |
+| `windows/hwinfo-gpus.ps1` | HWiNFO shared-memory GPU reader, shared by the daemon and WSL (copied to `~/.psmux/`, and to `~/.tmux/` on WSL) |
 | `windows/setup-psmux.ps1` | One-command Windows installer with backup |
 
 ## Keybindings

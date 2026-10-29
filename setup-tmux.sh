@@ -41,6 +41,11 @@ mkdir -p ~/.tmux
 cp gpu-stats.sh ~/.tmux/gpu-stats.sh
 chmod +x ~/.tmux/gpu-stats.sh
 echo "GPU script -> ~/.tmux/gpu-stats.sh"
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    # WSL: GPU stats come from the Windows host (HWiNFO), see gpu-stats.sh
+    cp windows/hwinfo-gpus.ps1 ~/.tmux/hwinfo-gpus.ps1
+    echo "WSL GPU reader -> ~/.tmux/hwinfo-gpus.ps1 (needs HWiNFO Shared Memory Support ON)"
+fi
 
 # 5. Create resurrect directory
 mkdir -p ~/.tmux/resurrect

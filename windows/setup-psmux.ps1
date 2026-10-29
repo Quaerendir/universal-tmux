@@ -34,6 +34,7 @@ Write-Host "Config -> $conf"
 $dir = Join-Path $env:USERPROFILE '.psmux'   # psmux keeps its own runtime files here too
 New-Item -ItemType Directory -Force $dir | Out-Null
 Copy-Item (Join-Path $src 'status-daemon.ps1') (Join-Path $dir 'status-daemon.ps1') -Force
+Copy-Item (Join-Path $src 'hwinfo-gpus.ps1') (Join-Path $dir 'hwinfo-gpus.ps1') -Force
 Write-Host "Status daemon -> $dir\status-daemon.ps1"
 
 # 4. Summary
