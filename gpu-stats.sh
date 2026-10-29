@@ -7,7 +7,11 @@
 # On machines without GPU: silent exit (no status bar clutter)
 
 # --- NVIDIA (desktop/server with dedicated vRAM) ---
-if command -v nvidia-smi &>/dev/null; then
+# A dead nvidia-smi (driver removed/disabled, WSL stub: "Failed to initialize NVML")
+# exits non-zero; fall through so AMD/Intel can still be shown.
+if command -v nvidia-smi &>/dev/null \
+    && nv_q=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null) \
+    && [ -n "$nv_q" ]; then
     # Check if memory query works (fails on Tegra/Jetson/Spark)
     mem_check=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | head -1)
 
@@ -31,7 +35,45 @@ if command -v nvidia-smi &>/dev/null; then
     exit 0
 fi
 
-# --- AMD (ROCm) ---
+# --- AMD (amdgpu kernel driver, read from sysfs; no rocm-smi needed) ---
+# Works for Radeon / Radeon Pro / Instinct and APU iGPUs. One entry per GPU;
+# with several GPUs each one is prefixed with its card number (GPU0:.. GPU1:..).
+# GPU_STATS_DRM overrides the sysfs location (used for testing).
+drm="${GPU_STATS_DRM:-/sys/class/drm}"
+amd_out=()
+amd_n=0
+for card in "$drm"/card*; do
+    [[ "${card##*/}" =~ ^card[0-9]+$ ]] || continue
+    dev="$card/device"
+    [ "$(cat "$dev/vendor" 2>/dev/null)" = "0x1002" ] || continue
+    [ -r "$dev/gpu_busy_percent" ] || continue
+    amd_n=$((amd_n + 1))
+    idx="${card##*/card}"
+    busy=$(cat "$dev/gpu_busy_percent" 2>/dev/null)
+    vu=$(cat "$dev/mem_info_vram_used" 2>/dev/null)
+    vt=$(cat "$dev/mem_info_vram_total" 2>/dev/null)
+    temp=""
+    for t in "$dev"/hwmon/hwmon*/temp1_input; do
+        [ -r "$t" ] && { temp=$(( $(cat "$t" 2>/dev/null || echo 0) / 1000 )); break; }
+    done
+    entry="${busy:-?}%"
+    if [[ "$vu" =~ ^[0-9]+$ && "$vt" =~ ^[0-9]+$ && "$vt" -gt 0 ]]; then
+        entry+=" vRAM:$((vu / 1048576))/$((vt / 1048576))Mi"
+    fi
+    [ -n "$temp" ] && entry+=" ${temp}°C"
+    amd_out+=("$idx|$entry")
+done
+if [ "$amd_n" -gt 0 ]; then
+    line=""
+    for e in "${amd_out[@]}"; do
+        if [ "$amd_n" -gt 1 ]; then label="GPU${e%%|*}:"; else label="GPU:"; fi
+        line+="${line:+ }${label}${e#*|}"
+    done
+    printf "%s" "$line"
+    exit 0
+fi
+
+# --- AMD (ROCm) fallback for kernels/GPUs without the sysfs counters ---
 if command -v rocm-smi &>/dev/null; then
     gpu_util=$(rocm-smi --showuse 2>/dev/null | awk '/GPU use/ {gsub(/%/,""); print $NF}' | head -1)
     gpu_temp=$(rocm-smi --showtemp 2>/dev/null | awk '/Temperature.*edge/ {print $NF}' | head -1)

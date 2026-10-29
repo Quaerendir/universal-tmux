@@ -6,7 +6,7 @@ Universal tmux config with hardware-aware status bar. Drop it on any machine —
 
 ## Features
 
-- **Auto-detecting GPU stats** in status bar (Nvidia desktop/Jetson/Spark, AMD ROCm, Intel iGPU, Raspberry Pi VideoCore)
+- **Auto-detecting GPU stats** in status bar (Nvidia desktop/Jetson/Spark, AMD Radeon (amdgpu sysfs, ROCm fallback), Intel iGPU, Raspberry Pi VideoCore)
 - **CPU & RAM** via [tmux-cpu](https://github.com/tmux-plugins/tmux-cpu) plugin
 - **Load average** from `/proc` (Linux) or `sysctl` (macOS)
 - **Session persistence** via [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) + [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum)
@@ -25,7 +25,8 @@ GPU section adapts per platform:
 |---|---|
 | Nvidia desktop/server | `GPU:35% vRAM:4096/8192Mi 62°C` |
 | Nvidia Jetson/Spark (unified memory) | `GPU:12% 42°C MEM:87.4/119.7G` |
-| AMD (ROCm) | `GPU:28% 65°C` |
+| AMD Radeon (amdgpu, via sysfs — no `rocm-smi` needed) | `GPU:28% vRAM:4096/32752Mi 65°C` |
+| Several AMD GPUs | `GPU0:5% vRAM:1024/32752Mi 41°C GPU1:99% vRAM:32424/32752Mi 78°C` |
 | Intel iGPU | `iGPU:1200MHz` |
 | Raspberry Pi | `RPi:52.1°C 500MHz 128M` (+ `THR!` on throttling) |
 | No GPU / VPS | *(empty — no clutter)* |
